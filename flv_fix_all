@@ -1,0 +1,9 @@
+#!/bin/sh
+
+for f in *.flv ; do 
+  echo $f 
+  rm _fixed.flv > /dev/null 2>&1
+  ~/src/flv/flv_fix "$f" _fixed.flv | grep -v "Found TAG"
+  mv _fixed.flv "$f"
+done
+

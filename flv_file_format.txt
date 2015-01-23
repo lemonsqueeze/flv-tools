@@ -1,0 +1,22 @@
+
+FLV file format:
+(from wikipedia)
+
+Tag structure:
+  Type          1 byte
+  Body len      3
+  Timestamp     3       (milliseconds)
+  Stream id     4
+  [body]
+  Previous len  4       (=body len + 11)
+
+Type:
+  0x12 - Metadata packet
+  0x08 - Audio packet
+  0x09 - Video packet
+
+-> skip   tag: forward (body len + 15/0xf)
+or isearch-forward-regexp ':.*08 *00'
+                          ':.*09 *00'
+
+-> rewind tag: rewind  (prev len + 4)

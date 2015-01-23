@@ -1,0 +1,2 @@
+#!/bin/sh
+ for f in *.flv ; do printf "%-45s: " "$f";  ~/src/flv/flv_debug $f | grep range ; done

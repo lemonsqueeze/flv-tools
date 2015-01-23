@@ -1,0 +1,81 @@
+#!/bin/bash
+
+die()
+{
+    echo "$@"
+    exit 1
+}
+
+usage()
+{
+    echo "Usage: opera_dump_flash_video output.flv"
+    echo ""
+    echo "Dump flash video files played in opera."
+    echo "Supports split youtube videos."
+    exit 1
+}
+
+if [ $# != 1 ]; then
+  usage
+fi
+
+output="$1"
+current_dir=`pwd`
+out_dir=~/tmp
+
+[ -d $out_dir ] || mkdir $out_dir
+cd $out_dir || die "couldn't cd to $out_dir"
+[ -f "$current_dir/$output" ] && die "file $output exists, aborting."
+touch "$current_dir/$output" || die "can't write to $output, aborting."
+rm "$current_dir/$output"
+rm $out_dir/cache_file_*.tmp > /dev/null 2>&1
+cd ${HOME}/.opera/cache || die "couldn't find opera's cache directory"
+
+cont=y
+trap cont="" int
+
+echo "Now load video in opera.        Press ^C when finished loading."
+echo "Scanning opera's cache....           (temp. dir is $out_dir)"
+
+out_number=1
+last_file=""
+last_size=0
+while [ -n "$cont" ] ; do
+  cache_file=$( ls  -t `find . -type f ` | head -1 )
+  links=$( stat "$cache_file" | grep Links: | sed -e 's/.*Links: \([0-9]*\)/\1/' )
+  size=$( stat "$cache_file" | grep Size:  | sed -e 's/.*Size: \([0-9]*\).*/\1/' )
+
+#  echo "last cache file:"
+#  ls -l $cache_file
+  
+  # name *.tmp, has one link, size changes -> go ahead!
+  if  echo $cache_file | grep -q '\.tmp' &&
+      [ "$links" == "1" ] &&
+      [ "$last_file" == "$cache_file" ] && [ "$size" != "$last_size" ]; then
+      
+      out_fname=`printf "cache_file_%02i.tmp" $out_number`
+      echo ln $cache_file $out_dir/$out_fname
+           ln $cache_file $out_dir/$out_fname
+      out_number=$[$out_number + 1]
+  fi
+
+  last_file="$cache_file";
+  last_size="$size"
+
+  sleep 1
+done
+echo ""
+
+cd $out_dir || die "couldn't cd to $out_dir"
+
+[ $out_number -gt 1 ] || die "No new cache file found, exiting."
+
+echo -n "" > header
+# missing header ? (some youtube videos)
+if file cache_file_01.tmp | grep -q ': data'; then
+  printf "\x46\x4c\x56\x01\x05\x00\x00\x00\x09\x00\x00\x00\x00" > header
+fi
+
+echo "Writing $output."
+cat header cache_file_*.tmp > "$current_dir/$output"
+#rm -rf $out_dir
