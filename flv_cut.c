@@ -15,6 +15,10 @@
 #define FLV_TYPE_VIDEO 0x09
 #define FLV_TYPE_META 0x12
 
+//#define DEBUG 1
+
+int		ignore_bad_tags = 0;
+
 void die(char *str)
 {
     printf(str);
@@ -24,7 +28,7 @@ void die(char *str)
 void usage(void)
 {
     printf("Usage:\n");
-    printf("  flv_cut --end mm:ss:ms  file.flv out.flv\n");
+    printf("  flv_cut [--ignore-bad-tags] [--begin mm:ss:ms] [--end mm:ss:ms]  file.flv out.flv\n");
     printf("\n");
     printf("  Cutout stuff after end. Output written to out.flv\n");
     printf("\n");
@@ -91,13 +95,28 @@ int read_number(const uchar *pt, int bytes)
     return len;
 }
 
+#ifdef DEBUG
+char time_buf[20];
+char time_buf2[20];
+
+char* format_time(int time, char *str)
+{
+    int m, s, ms;
+    ms = time % 1000;
+    s = (time / 1000) % 60;
+    m = time / (60 * 1000);
+    sprintf(str, "%02i:%02i:%03i", m, s, ms);
+    return str;
+}
+#endif // DEBUG
+
 const uchar *skip_tag(const uchar *tag_begin, int body_len)
 {
     return tag_begin + body_len + 15;
 }
 
 int parse_tag(const uchar *pt,
-	      uchar *type, int *body_len, int *timestamp, int *stream_id,
+	      uchar *type, uint *body_len, uint *timestamp, uint *stream_id,
 	      const uchar *beg, int file_len)
 {
     const uchar const *pt_orig = pt;
@@ -116,7 +135,8 @@ int parse_tag(const uchar *pt,
 	   *type == FLV_TYPE_VIDEO ||
 	   *type == FLV_TYPE_META))
     {
-	printf("Invalid tag type %#02x at offset %i\n", *type, OFFSET);
+	if (!ignore_bad_tags)
+	    printf("Invalid tag type %#02x at offset %i\n", *type, OFFSET);
 	return 0;
     }
     
@@ -146,8 +166,9 @@ int parse_tag(const uchar *pt,
     prev_len = read_number(pt, 4);
     if (prev_len + 4 != *body_len + 15)
     {
-	printf("*** Warning: Invalid tag, end of tag length mismatch (%i != %i)\n",
-	       prev_len + 4, *body_len + 15);
+	if (!ignore_bad_tags)
+	    printf("*** Warning: Invalid tag, end of tag length mismatch (%i != %i)\n",
+		   prev_len + 4, *body_len + 15);
 	return 0;
     }
     return 1;
@@ -161,7 +182,8 @@ int		head_len = 0;
 const char	*out_fname = 0;
 int		out_fd = 0;
 
-int		time_end = 0;
+uint		time_end = 0xffffffff;
+uint		time_begin = 0;
 
 ssize_t my_write(int fd, const void *buf, size_t count)
 {
@@ -186,7 +208,7 @@ void parse_tags()
     const uchar *pt = beg;
     const uchar *next_pt = 0;
     uchar type;
-    int len, timestamp, stream_id;
+    uint len, timestamp, stream_id;
 
     /* Checking head */
     if (!strncmp((char*)pt, "FLV", 3))
@@ -203,7 +225,12 @@ void parse_tags()
     while (pt - beg < head_len)
     {
 	if (!parse_tag(pt, &type, &len, &timestamp, &stream_id, beg, head_len))
-	    die("invalid tag found, aborting. Fix file first.\n");
+	{
+	    if (!ignore_bad_tags)
+		die("invalid tag found, aborting. Fix file first.\n");
+	    pt++;
+	    continue;
+	}
 	
 	// TODO: parse metadata tag
 	
@@ -213,16 +240,22 @@ void parse_tags()
 	       *pt == FLV_TYPE_META,
 	       "Unknown tag ... corrupted file ?\n");
 
+#ifdef DEBUG	
+	printf("%08i: Found TAG type %#04x, len %5i, time %s, stream_id %i\n",
+	       pt - beg, type, len, format_time(timestamp, time_buf), stream_id);
+#endif
+	
 	if (timestamp > time_end)
 	    break;
 	
 	next_pt = skip_tag(pt, len);
-	my_write(out_fd, pt, next_pt - pt);
+	if (timestamp >= time_begin)
+	    my_write(out_fd, pt, next_pt - pt);
 	pt = next_pt;
     }
 }
 
-int parse_time(const char *str)
+uint parse_time(const char *str)
 {
     int m, s, ms;
     if (sscanf(str, "%i:%i:%i", &m, &s, &ms) != 3)
@@ -233,16 +266,31 @@ int parse_time(const char *str)
 int main(int ac, char **av)
 {
     ac--; av++;
-
-    if (ac != 4)
+    if (!ac)
 	usage();
+
+    if (!strcmp(av[0], "--ignore-bad-tags"))
+    {
+	ac--; av++;
+	ignore_bad_tags = 1;
+    }
     
-    if (strcmp(av[0], "--end"))
-	usage();
-    ac--; av++;
+    if (!strcmp(av[0], "--begin"))
+    {
+	ac--; av++;	
+	time_begin = parse_time(av[0]);	
+	ac--; av++;	
+    }
+    
+    if (!strcmp(av[0], "--end"))
+    {
+	ac--; av++;
+	time_end = parse_time(av[0]);
+	ac--; av++;
+    }
 
-    time_end = parse_time(av[0]);
-    ac--; av++;    
+    if (ac != 2)
+	usage();    
     
     head_fname = *av;
     head_fd = my_open(head_fname, O_RDONLY, 0);
