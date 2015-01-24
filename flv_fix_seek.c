@@ -29,7 +29,7 @@ void usage(void)
     printf("\n");
     printf("  Make a readable file with begin's header and seek's content.\n");
     printf("\n");
-    printf("  For example, there is this big flash video out there,\n");
+    printf("  So there is this big flash video out there,\n");
     printf("  but you only want a part of it. So you'd rather:\n");
     printf("    - seek directly to the interesting part in the player,\n");
     printf("    - get the downloaded data from the browser\n");
@@ -38,9 +38,9 @@ void usage(void)
     printf("  is unreadable: it's got just the middle data and without the header's\n");
     printf("  metadata the player can't read it.\n");
     printf("\n");
-    printf("  However if you have a little bit of the beginning (begin.flv),\n");    
-    printf("  the broken part that won't play (seek.flv) and feed that to\n");
-    printf("  fix_flv_seek, it should be enough to make it readable.\n");
+    printf("  However if you have some of the beginning (begin.flv),\n");
+    printf("  and feed that and the broken part that won't play (seek.flv)\n");
+    printf("  to fix_flv_seek that should be enough to make it readable.\n");
     printf("\n");
     exit(1);
 }

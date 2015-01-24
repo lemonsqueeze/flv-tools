@@ -1,9 +1,11 @@
 #!/bin/sh
+# flv_fix_all:
+# repair input files (see flv_fix)
 
-for f in *.flv ; do 
+for f in "$@" ; do 
   echo $f 
   rm _fixed.flv > /dev/null 2>&1
-  ~/src/flv/flv_fix "$f" _fixed.flv | grep -v "Found TAG"
+  flv_fix "$f" _fixed.flv | grep -v "Found TAG"
   mv _fixed.flv "$f"
 done
 

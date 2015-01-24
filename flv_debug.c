@@ -29,6 +29,9 @@ void usage(void)
     printf("Usage:\n");
     printf("  flv_debug  file.flv\n");
     printf("\n");
+    printf("  Parse file and show flv tags found.\n");
+    printf("  Handles files that are partly broken, so useful to see what's going on with these.\n");
+    printf("  See flv_fix to fix them.\n");
     exit(1);
 }
 

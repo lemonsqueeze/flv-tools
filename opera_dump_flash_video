@@ -10,8 +10,8 @@ usage()
 {
     echo "Usage: opera_dump_flash_video output.flv"
     echo ""
-    echo "Dump flash video files played in opera."
-    echo "Supports split youtube videos."
+    echo "Grab flash videos from opera's cache (opera 12)."
+    echo "(Supports split youtube videos)"
     exit 1
 }
 

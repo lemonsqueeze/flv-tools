@@ -30,7 +30,7 @@ void usage(void)
     printf("Usage:\n");
     printf("  flv_cut [--ignore-bad-tags] [--begin mm:ss:ms] [--end mm:ss:ms]  file.flv out.flv\n");
     printf("\n");
-    printf("  Cutout stuff after end. Output written to out.flv\n");
+    printf("  Keep only frames between begin and end. Output written to out.flv\n");
     printf("\n");
     exit(1);
 }

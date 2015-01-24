@@ -1,2 +1,9 @@
 #!/bin/sh
- for f in *.flv ; do printf "%-45s: " "$f";  ~/src/flv/flv_debug $f | grep range ; done
+# flv_times
+# Show time ranges of frames in flv files.
+# Usage: flv_times file.flv [...]
+
+for f in "$@" ; do
+  printf "%-45s: " "$f"
+  flv_debug $f | grep range 
+done

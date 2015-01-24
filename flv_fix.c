@@ -26,7 +26,8 @@ void usage(void)
     printf("Usage:\n");
     printf("  flv_fix  file.flv out.flv\n");
     printf("\n");
-    printf("  Attempt to repair file.flv. Output written to out.flv\n");
+    printf("  Attempt to repair invalid file.flv (flv_debug shows errors).\n");
+    printf("  Output written to out.flv\n");
     printf("\n");
     exit(1);
 }
